@@ -1,0 +1,46 @@
+[package]
+name = "twostep"
+version = "0.1.0"
+authors = ["Daniel Corn <info@cundd.net>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["std"]
+std = []
+debug = []
+auto_trigger = []
+test_adc = []
+
+
+[dependencies]
+#ruduino = "0.2"
+panic-halt = "0.2.0"
+nb = "0.1.2"
+ufmt = "0.1.0"
+avr-device = "0.2.2"
+
+[dependencies.void]
+version = "1.0.2"
+default-features = false
+
+[dependencies.arduino-uno]
+git = "https://github.com/Rahix/avr-hal"
+rev = "d17a441a667dd65e5a9be75b0e71d1beadf93e84"
+# ^- Pin the dependency to a specific version.  You should use the latest
+# commit hash from the avr-hal master branch.  You can find it here:
+#
+#    https://github.com/Rahix/avr-hal/commits/master
+
+[profile.dev]
+panic = "abort"
+lto = true
+opt-level = "s"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+debug = true
+lto = true
+opt-level = "s"

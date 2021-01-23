@@ -1,11 +1,11 @@
 use crate::sequence::Sequence;
 use crate::trigger_state::TriggerState;
 use arduino_uno::hal::port::mode::{Floating, Input};
-use arduino_uno::hal::port::portb::PB4;
 use arduino_uno::prelude::*;
 use void::ResultVoidExt;
+use arduino_uno::hal::port::portd::PD2;
 
-type ClockInput = PB4<Input<Floating>>;
+type ClockInput = PD2<Input<Floating>>;
 pub type StepCounterType = usize;
 
 pub struct ClockIn {
@@ -28,6 +28,13 @@ impl ClockIn {
         match state {
             TriggerState::Rise => {
                 self.advance_step_counter(sequence);
+
+
+                let mut serial: arduino_uno::Serial<arduino_uno::hal::port::mode::Floating> =
+                    unsafe { core::mem::MaybeUninit::uninit().assume_init() };
+
+                ufmt::uwriteln!(&mut serial, "CLK!\r").void_unwrap();
+
                 self.last_important_trigger_state = state
             }
             TriggerState::Fall => self.last_important_trigger_state = state,

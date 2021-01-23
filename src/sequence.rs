@@ -50,7 +50,20 @@ impl Sequence {
             0b00100000 => self.s6,
             0b01000000 => self.s7,
             0b10000000 => self.s8,
-            _ => panic!(),
+            _ => None,
+        }
+    }
+    pub fn get_step_option(&self, step: u8) -> Option<DacByte> {
+        match step {
+            0b00000001 => self.s1,
+            0b00000010 => self.s2,
+            0b00000100 => self.s3,
+            0b00001000 => self.s4,
+            0b00010000 => self.s5,
+            0b00100000 => self.s6,
+            0b01000000 => self.s7,
+            0b10000000 => self.s8,
+            _ => None,
         }
     }
 
@@ -109,7 +122,7 @@ macro_rules! seq {
     };
     ($b1:expr, $b2:expr, $b3:expr, $b4:expr, $b5:expr, $b6:expr, $b7:expr $(,)?) => {
         Sequence::new(
-            8,
+            7,
             Some($b1),
             Some($b2),
             Some($b3),
@@ -122,7 +135,7 @@ macro_rules! seq {
     };
     ($b1:expr, $b2:expr, $b3:expr, $b4:expr, $b5:expr, $b6:expr $(,)?) => {
         Sequence::new(
-            8,
+            6,
             Some($b1),
             Some($b2),
             Some($b3),

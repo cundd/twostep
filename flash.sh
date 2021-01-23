@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 : "${CPU:=atmega328p}"
 : "${BAUD_RATE:=57600}"
@@ -7,15 +8,14 @@
 : "${ELF:=target/avr-atmega328p/release/twostep.elf}"
 
 main() {
-  #cargo build;
-
   if [ "$#" -lt 1 ]; then
     echo "[ERROR] Missing argument device (e.g.: /dev/cu.wchusbserial1420)"
     exit 1
   fi
 
   if [ "$1" == "-b" ]; then
-    cargo build --color=always -Z build-std=core --target avr-atmega328p.json --release
+    cargo +nightly-2021-01-07 build --color=always -Z build-std=core --target avr-atmega328p.json --release
+    #    cargo build --release
     shift
   fi
 

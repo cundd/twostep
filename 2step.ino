@@ -1,117 +1,125 @@
-#include <Arduino.h>
+#include <FastLED.h>
 
-int trigger = 12;
-int step_port1 = 2;
-int step_port2 = 3;
-int step_port3 = 4;
-int step_port4 = 5;
-int step_port5 = 6;
-int step_port6 = 7;
-int step_port7 = 8;
-int step_port8 = 9;
+FASTLED_USING_NAMESPACE
 
-int step_ports[8] = {
-    2,
-    3,
-    4,
-    5,
-    6,
-    7,
-    8,
-    9,
-};
+// FastLED "100-lines-of-code" demo reel, showing just a few
+// of the kinds of animation patterns you can quickly and easily
+// compose using FastLED.
+//
+// This example also shows one easy way to define multiple
+// animations patterns and have them automatically rotate.
+//
+// -Mark Kriegsman, December 2014
 
-int step_out = 10;
+#if defined(FASTLED_VERSION) && (FASTLED_VERSION < 3001000)
+#warning "Requires FastLED 3.1 or later; check github for latest code."
+#endif
 
-int sequence = 0b11001010;
-int step_counter = 0;
-bool last_trigger_state = false;
+#define DATA_PIN    13
+//#define CLK_PIN   4
+#define LED_TYPE    WS2811
+#define COLOR_ORDER GRB
+#define NUM_LEDS    17
+    CRGB leds[NUM_LEDS];
+
+#define BRIGHTNESS          96
+#define FRAMES_PER_SECOND  120
 
 void setup() {
-    Serial.begin(9600);
-    pinMode(LED_BUILTIN, OUTPUT);
-    pinMode(trigger, INPUT);
+    delay(3000); // 3 second delay for recovery
 
-    pinMode(step_port1, OUTPUT);
-    pinMode(step_port2, OUTPUT);
-    pinMode(step_port3, OUTPUT);
-    pinMode(step_port4, OUTPUT);
-    pinMode(step_port5, OUTPUT);
-    pinMode(step_port6, OUTPUT);
-    pinMode(step_port7, OUTPUT);
-    pinMode(step_port8, OUTPUT);
-    pinMode(step_out, OUTPUT);
+    // tell FastLED about the LED strip configuration
+    FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+    //FastLED.addLeds<LED_TYPE,DATA_PIN,CLK_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
 
+    // set master brightness control
+    FastLED.setBrightness(BRIGHTNESS);
 }
 
-//int step_pointer = 0b10000000;
 
-void trigger_step(int step) {
-    set_all_off();
-    digitalWrite(step, HIGH);
+// List of patterns to cycle through.  Each is defined as a separate function below.
+typedef void (*SimplePatternList[])();
+SimplePatternList gPatterns = { rainbow, rainbowWithGlitter, confetti, sinelon, juggle, bpm };
+
+uint8_t gCurrentPatternNumber = 0; // Index number of which pattern is current
+uint8_t gHue = 0; // rotating "base color" used by many of the patterns
+
+void loop()
+{
+    // Call the current pattern function once, updating the 'leds' array
+    gPatterns[gCurrentPatternNumber]();
+
+    // send the 'leds' array out to the actual LED strip
+    FastLED.show();
+    // insert a delay to keep the framerate modest
+    FastLED.delay(1000/FRAMES_PER_SECOND);
+
+    // do some periodic updates
+    EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
+    EVERY_N_SECONDS( 10 ) { nextPattern(); } // change patterns periodically
 }
 
-void set_all_off() {
-    for (const auto port : step_ports) {
-        digitalWrite(port, LOW);
+#define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
+
+void nextPattern()
+{
+    // add one to the current pattern number, and wrap around at the end
+    gCurrentPatternNumber = (gCurrentPatternNumber + 1) % ARRAY_SIZE( gPatterns);
+}
+
+void rainbow()
+{
+    // FastLED's built-in rainbow generator
+    fill_rainbow( leds, NUM_LEDS, gHue, 7);
+}
+
+void rainbowWithGlitter()
+{
+    // built-in FastLED rainbow, plus some random sparkly glitter
+    rainbow();
+    addGlitter(80);
+}
+
+void addGlitter( fract8 chanceOfGlitter)
+{
+    if( random8() < chanceOfGlitter) {
+        leds[ random16(NUM_LEDS) ] += CRGB::White;
     }
 }
 
-void loop() {
-    bool trigger_state = digitalRead(trigger);
-    Serial.println(trigger_state);
-    if (trigger_state && last_trigger_state == false) {
-        update();
-    }
-    last_trigger_state = trigger_state;
-
+void confetti()
+{
+    // random colored speckles that blink in and fade smoothly
+    fadeToBlackBy( leds, NUM_LEDS, 10);
+    int pos = random16(NUM_LEDS);
+    leds[pos] += CHSV( gHue + random8(64), 200, 255);
 }
 
-void update() {
-    step_counter += 1;
-    if (step_counter > 7) {
-        step_counter = 0;
-    }
-
-    int step_pointer = 0b10000000 >> step_counter;
-//    step_pointer = step_pointer >> 1;
-//    if (step_pointer == 0) {
-//        // print!("Roll ");
-//        step_pointer = 0b10000000;
-//    } else {
-//        // print!("     ");
-//    }
-    prntBits(step_pointer);
-    // print!("{:#010b}", step_pointer);
-    // print!(" {:#020b}", step_pointer & sequence);
-    set_all_off();
-
-    digitalWrite(step_ports[step_counter], (step_pointer & sequence) == step_pointer);
-
-    if ((step_pointer & sequence) == step_pointer) {
-        digitalWrite(step_out, HIGH);
-        digitalWrite(LED_BUILTIN, HIGH);
-        Serial.print("!");
-    } else {
-        digitalWrite(step_out, LOW);
-        digitalWrite(LED_BUILTIN, LOW);
-    }
-    Serial.println();
-    delay(100);
-
-
-//    delay(500);                       // wait for half a second
-//    digitalWrite(LED_BUILTIN, trigger_state);    // turn the LED off
-//    delay(500);
+void sinelon()
+{
+    // a colored dot sweeping back and forth, with fading trails
+    fadeToBlackBy( leds, NUM_LEDS, 20);
+    int pos = beatsin16( 13, 0, NUM_LEDS-1 );
+    leds[pos] += CHSV( gHue, 255, 192);
 }
 
-void prntBits(byte b) {
-    for (int i = 7; i >= 0; i--) {
-        Serial.print(bitRead(b, i));
+void bpm()
+{
+    // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
+    uint8_t BeatsPerMinute = 62;
+    CRGBPalette16 palette = PartyColors_p;
+    uint8_t beat = beatsin8( BeatsPerMinute, 64, 255);
+    for( int i = 0; i < NUM_LEDS; i++) { //9948
+        leds[i] = ColorFromPalette(palette, gHue+(i*2), beat-gHue+(i*10));
     }
 }
-//int get_step_for_(byte b) {
-//    for (int i = 7; i >= 0; i--) {
-//        Serial.print(bitRead(b, i));
-//    }
-//}
+
+void juggle() {
+    // eight colored dots, weaving in and out of sync with each other
+    fadeToBlackBy( leds, NUM_LEDS, 20);
+    byte dothue = 0;
+    for( int i = 0; i < 8; i++) {
+        leds[beatsin16( i+7, 0, NUM_LEDS-1 )] |= CHSV(dothue, 200, 255);
+        dothue += 32;
+    }
+}

@@ -3,12 +3,12 @@ use crate::sequence::Sequence;
 use crate::trigger_state::TriggerState;
 use crate::DELAY_TIME;
 use arduino_uno::hal::port::mode::Output;
-use arduino_uno::hal::port::portb::{PB2, PB5};
+use arduino_uno::hal::port::portb::PB5;
+use arduino_uno::hal::port::portd::PD3;
 use arduino_uno::prelude::*;
 use void::{ResultVoidExt, Void};
 
-type TriggerOutput = PB2<Output>;
-type BuiltinLed = PB5<Output>;
+type TriggerOutput = PD3<Output>;
 
 const HIGH: bool = true;
 const LOW: bool = false;
@@ -25,24 +25,15 @@ pub enum TriggerMode {
 }
 
 pub struct Trigger {
-    // input: TriggerInput,
     output: TriggerOutput,
-    builtin_led: BuiltinLed,
     trigger_mode: TriggerMode,
     last_trigger_state: TriggerState,
 }
 
 impl Trigger {
-    pub fn new(
-        // input: TriggerInput,
-        output: TriggerOutput,
-        builtin_led: BuiltinLed,
-        trigger_mode: TriggerMode,
-    ) -> Self {
+    pub fn new(output: TriggerOutput, trigger_mode: TriggerMode) -> Self {
         Self {
-            // input,
             output,
-            builtin_led,
             trigger_mode,
             last_trigger_state: TriggerState::Unchanged,
         }
@@ -58,6 +49,11 @@ impl Trigger {
             TriggerState::Rise => {
                 let step_pointer: u8 = 0b00000001 << step_counter;
                 self.set_output(if sequence.matches(step_pointer) {
+                    let mut serial: arduino_uno::Serial<arduino_uno::hal::port::mode::Floating> =
+                        unsafe { core::mem::MaybeUninit::uninit().assume_init() };
+
+                    ufmt::uwriteln!(&mut serial, "trigger!\r").void_unwrap();
+
                     HIGH
                 } else {
                     LOW
@@ -84,10 +80,8 @@ impl Trigger {
 
     fn set_output(&mut self, value: bool) -> Result<(), Void> {
         if value == HIGH {
-            self.builtin_led.set_high()?;
             self.output.set_high()
         } else {
-            self.builtin_led.set_low()?;
             self.output.set_low()
         }
     }

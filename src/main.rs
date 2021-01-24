@@ -25,6 +25,7 @@ use smart_leds::RGB8;
 mod clock_in;
 mod color;
 mod dac_byte;
+mod serial_wrapper;
 mod trigger;
 mod trigger_state;
 use dac_byte::DacByte;
@@ -37,6 +38,7 @@ use crate::clock_in::{ClockIn, StepCounterType};
 use crate::led_controller::LedController;
 use crate::sequence::Sequence;
 use crate::sequence_controller::{SequenceController, SequenceState};
+use crate::serial_wrapper::SerialWrapper;
 use crate::trigger::{Trigger, TriggerMode};
 use crate::trigger_state::TriggerState;
 use arduino_uno::hal::port::portd::PD4;
@@ -243,15 +245,15 @@ impl App {
             pins.d9.into_output(&mut pins.ddr).downgrade(),
         ];
 
-        let serial = SerialWrapper {
-            debug: if cfg!(feature = "debug") { true } else { false },
-            serial: arduino::Serial::new(
+        let serial = SerialWrapper::new(
+            if cfg!(feature = "debug") { true } else { false },
+            arduino::Serial::new(
                 dp.USART0,
                 pins.d0,
                 pins.d1.into_output(&mut pins.ddr),
                 57600.into_baudrate(),
             ),
-        };
+        );
 
         let adc = adc::Adc::new(dp.ADC, Default::default());
         // let a5 = pins.a5.into_analog_input(&mut adc);
@@ -309,11 +311,14 @@ impl App {
 impl App {
     fn run(&mut self) -> ! {
         if cfg!(feature = "debug") {
-            ufmt::uwriteln!(&mut self.serial.serial, "Hello from Arduino with debug!\r")
+            ufmt::uwriteln!(
+                &mut self.serial.get_serial(),
+                "Hello from Arduino with debug!\r"
+            )
                 .void_unwrap();
         } else {
             ufmt::uwriteln!(
-                &mut self.serial.serial,
+                &mut self.serial.get_serial(),
                 "Hello from Arduino without debug!\r"
             )
             .void_unwrap();
@@ -515,26 +520,6 @@ impl App {
 //         buf.bytes().nth()[1] = 'c';
 //     }
 // }
-
-struct SerialWrapper<IMODE: InputMode> {
-    debug: bool,
-    serial: Serial<IMODE>,
-}
-impl<IMODE: InputMode> uWrite for SerialWrapper<IMODE> {
-    type Error = void::Void;
-
-    fn write_str(&mut self, s: &str) -> Result<(), Self::Error> {
-        if cfg!(feature = "debug") {
-            if self.debug {
-                self.serial.write_str(s)
-            } else {
-                Ok(())
-            }
-        } else {
-            Ok(())
-        }
-    }
-}
 
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {

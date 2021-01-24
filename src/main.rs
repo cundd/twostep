@@ -3,58 +3,50 @@
 #![no_std]
 #![no_main]
 
-use arduino::prelude::*;
-use arduino_uno as arduino;
-use arduino_uno::adc::Adc;
-use arduino_uno::hal::port::mode::{Analog, Floating, InputMode, Output};
-use arduino_uno::hal::port::portb::PB5;
-use arduino_uno::hal::port::portc::{PC4, PC5};
-use arduino_uno::hal::port::{mode, Pin};
-use arduino_uno::Serial;
-use arduino_uno::{adc, spi};
-use ufmt::uWrite;
-
-use ws2812_spi as ws2812;
-
 // mod prerendered;
 // use prerendered::Ws2812;
 // use crate::ws2812::prerendered::Ws2812;
-use smart_leds::RGB8;
 
 // mod clock;
 mod clock_in;
 mod color;
-mod dac_byte;
-mod serial_wrapper;
-mod trigger;
-mod trigger_state;
-use dac_byte::DacByte;
 mod dac;
-use dac::Dac;
+mod dac_byte;
 mod led_controller;
 mod sequence;
 mod sequence_controller;
+mod serial_wrapper;
+mod trigger;
+mod trigger_state;
+
 use crate::clock_in::{ClockIn, StepCounterType};
+use crate::dac::Dac;
+use crate::dac_byte::DacByte;
 use crate::led_controller::LedController;
 use crate::sequence::Sequence;
 use crate::sequence_controller::{SequenceController, SequenceState};
 use crate::serial_wrapper::SerialWrapper;
 use crate::trigger::{Trigger, TriggerMode};
 use crate::trigger_state::TriggerState;
+use arduino::prelude::*;
+use arduino_uno as arduino;
+use arduino_uno::adc::Adc;
+use arduino_uno::hal::port::mode::{Analog, Floating, Output};
+use arduino_uno::hal::port::portb::PB5;
+use arduino_uno::hal::port::portc::{PC4, PC5};
 use arduino_uno::hal::port::portd::PD4;
+use arduino_uno::hal::port::{mode, Pin};
+use arduino_uno::{adc, spi};
 use embedded_hal::digital::v2::OutputPin;
 use void::ResultVoidExt;
+use ws2812_spi as ws2812;
 
 const DELAY_TIME: u16 = 5;
 const STEP_LED_COUNT: usize = 5;
 const RGB_LED_COUNT: usize = 8;
 
-// static mut output_buffer_st: [u8; 136] = [0; 40 + (RGB_LED_COUNT * 12)];
-
-// const SEQUENCES: [u8; 7] = [
-//     0b11111111, 0b01001001, 0b01010101, 0b00001111, 0b11110000, 0b11001100, 0b11100101,
-// ];
 type SequencesType = [Sequence; 11];
+
 const SEQUENCES: SequencesType = [
     seq!(
         DacByte::max(),
@@ -175,18 +167,12 @@ const SEQUENCES: SequencesType = [
 
 #[arduino::entry]
 fn main() -> ! {
-    let mut app = App::new();
+    let mut app = App::default();
     app.run()
 }
 
 #[derive(Clone)]
 struct State {
-    // #[deprecated]
-    // step_counter: StepCounterType,
-    // sequence_pointer: usize,
-    // last_sequence_change_state: bool,
-    // #[deprecated]
-    // last_trigger_state: bool,
     trigger_interval: Option<u32>,
     auto_trigger_interval_countdown: u32,
     last_trigger_time: Option<u32>,
@@ -194,12 +180,8 @@ struct State {
 
 #[derive(Clone)]
 struct AppState {
-    // #[deprecated]
-    // step_counter: StepCounterType,
     sequence_pointer: usize,
     last_sequence_change_state: bool,
-    // #[deprecated]
-    // last_trigger_state: bool,
     trigger_interval: Option<u32>,
     auto_trigger_interval_countdown: u32,
     last_trigger_time: Option<u32>,
@@ -207,28 +189,22 @@ struct AppState {
 
 #[allow(unused)]
 struct App {
-    // trigger_input: PB4<Input<Floating>>,
-    // sequence_change_input: PC5<Input<PullUp>>,
-    // builtin_led: PB5<Output>,
     step_output_pins: [Pin<Output>; STEP_LED_COUNT],
     adc: Adc,
     a5: Option<PC5<Analog>>,
     dac: Dac,
-    // trigger_out: PB2<Output>,
     sequence_change_output: PD4<Output>,
     serial: SerialWrapper<Floating>,
     sequences: &'static SequencesType,
     state: State,
     trigger: Trigger,
     clock_in: ClockIn,
-    // spi: Spi<PullUp>,
     sequence_controller: SequenceController,
     led_controller: LedController<'static>,
-    // output_buffer: [usize; 40 + (RGB_LED_COUNT * 12)],
 }
-// impl Default for App {
-impl App {
-    fn new() -> Self {
+
+impl Default for App {
+    fn default() -> Self {
         let dp = arduino::Peripherals::take().unwrap();
 
         let mut pins = arduino::Pins::new(dp.PORTB, dp.PORTC, dp.PORTD);
@@ -412,49 +388,32 @@ impl App {
 
     fn trigger_step(&mut self, step_counter: StepCounterType, sequence: Sequence) {
         let step_pointer: u8 = 0b00000001 << step_counter;
-        // ufmt::uwriteln!(&mut self.serial, "{:#?}\r", step_pointer).void_unwrap();
-        // ufmt::uwriteln!(
-        //     &mut self.serial,
-        //     "seq:{:?} sp:{:?} sc:{}\r",
-        //     sequence,
-        //     step_pointer,
-        //     step_counter,
-        // )
-        // .void_unwrap();
-
-        let step = sequence.get_step(step_pointer);
-        match step {
-            None => self.dac.set(DacByte::new(0)),
-            Some(step) => self.dac.set(step),
-        }
-
-        ufmt::uwriteln!(
-            &mut self.serial,
-            "{:#?} {:#?}\r",
-            RGB_LED_COUNT,
-            step_counter
-        )
-        .void_unwrap();
+        self.set_dac(sequence, step_counter);
 
         self.set_all_step_pins_low();
 
         let output_pin = self.step_output_pins.get_mut(step_counter);
         let sequence_matches = sequence.matches(step_pointer);
 
-        if sequence_matches {
-            if let Some(pin) = output_pin {
+        if let Some(pin) = output_pin {
+            if sequence_matches {
                 pin.set_high().void_unwrap();
-            }
-            // self.step_output_pins[step_counter].set_high().void_unwrap();
-        } else {
-            if let Some(pin) = output_pin {
+            } else {
                 pin.set_low().void_unwrap();
-            }
-            // self.step_output_pins[step_counter].set_low().void_unwrap();
-        };
+            };
+        }
         self.led_controller
             .show_step(sequence, step_counter, sequence_matches)
             .unwrap();
+    }
+
+    fn set_dac(&mut self, sequence: Sequence, step_counter: StepCounterType) {
+        let step_pointer: u8 = 0b00000001 << step_counter;
+
+        match sequence.get_step(step_pointer) {
+            None => self.dac.set(DacByte::new(0)),
+            Some(step) => self.dac.set(step),
+        }
     }
 
     fn set_all_step_pins_low(&mut self) {
@@ -512,14 +471,6 @@ impl App {
         }
     }
 }
-
-// fn fmt_bits(b: u8) {
-//     let mut buf: &str = "0b0000000";
-//     for position in 7..0 {
-//         b & (1 << position);
-//         buf.bytes().nth()[1] = 'c';
-//     }
-// }
 
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {

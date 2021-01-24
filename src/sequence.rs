@@ -53,19 +53,6 @@ impl Sequence {
             _ => None,
         }
     }
-    pub fn get_step_option(&self, step: u8) -> Option<DacByte> {
-        match step {
-            0b00000001 => self.s1,
-            0b00000010 => self.s2,
-            0b00000100 => self.s3,
-            0b00001000 => self.s4,
-            0b00010000 => self.s5,
-            0b00100000 => self.s6,
-            0b01000000 => self.s7,
-            0b10000000 => self.s8,
-            _ => None,
-        }
-    }
 
     pub fn matches(&self, step: u8) -> bool {
         match step {

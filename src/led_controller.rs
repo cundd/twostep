@@ -92,7 +92,7 @@ impl<'a> LedController<'a> {
 
         for step_counter in 0..RGB_LED_COUNT {
             let step_pointer: u8 = 0b00000001 << step_counter;
-            if let Some(dac_byte) = sequence.get_step_option(step_pointer) {
+            if let Some(dac_byte) = sequence.get_step(step_pointer) {
                 if dac_byte.value() > 0 {
                     data[step_counter] = COLOR_MATCH;
                 } else {

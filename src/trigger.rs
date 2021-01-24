@@ -3,7 +3,6 @@ use crate::sequence::Sequence;
 use crate::trigger_state::TriggerState;
 use crate::DELAY_TIME;
 use arduino_uno::hal::port::mode::Output;
-use arduino_uno::hal::port::portb::PB5;
 use arduino_uno::hal::port::portd::PD3;
 use arduino_uno::prelude::*;
 use void::{ResultVoidExt, Void};
@@ -49,11 +48,6 @@ impl Trigger {
             TriggerState::Rise => {
                 let step_pointer: u8 = 0b00000001 << step_counter;
                 self.set_output(if sequence.matches(step_pointer) {
-                    let mut serial: arduino_uno::Serial<arduino_uno::hal::port::mode::Floating> =
-                        unsafe { core::mem::MaybeUninit::uninit().assume_init() };
-
-                    ufmt::uwriteln!(&mut serial, "trigger!\r").void_unwrap();
-
                     HIGH
                 } else {
                     LOW
@@ -61,16 +55,16 @@ impl Trigger {
                 .void_unwrap();
 
                 if self.trigger_mode == TriggerMode::Pulse {
+                    // Todo: Make this async
                     arduino_uno::delay_ms(DELAY_TIME);
+                    self.set_output(LOW).void_unwrap();
                 }
             }
             TriggerState::Fall => {
                 match self.trigger_mode {
                     TriggerMode::Follow => self.set_output(LOW).void_unwrap(),
                     TriggerMode::Hold => { /* Do nothing; wait for the next external trigger */ }
-                    TriggerMode::Pulse => {
-                        self.set_output(LOW).void_unwrap() /* Do nothing; delay was set using Arduino library */
-                    }
+                    TriggerMode::Pulse => { /* Do nothing; delay was set using Arduino library */ }
                 }
             }
             TriggerState::Unchanged => {}

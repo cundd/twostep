@@ -21,12 +21,8 @@ impl<IMODE: InputMode> uWrite for SerialWrapper<IMODE> {
     type Error = void::Void;
 
     fn write_str(&mut self, s: &str) -> Result<(), Self::Error> {
-        if cfg!(feature = "debug") {
-            if self.debug {
-                self.serial.write_str(s)
-            } else {
-                Ok(())
-            }
+        if cfg!(feature = "debug") && self.debug {
+            self.serial.write_str(s)
         } else {
             Ok(())
         }

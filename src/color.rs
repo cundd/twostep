@@ -2,11 +2,12 @@ use crate::RGB_LED_COUNT;
 use smart_leds::RGB8;
 
 pub type Color = RGB8;
+
 pub const COLOR_UNMAPPED: Color = Color { r: 0, g: 0, b: 0 };
-pub const COLOR_MATCH: Color = Color { r: 40, g: 0, b: 4 };
-pub const COLOR_NO_MATCH: Color = Color { r: 10, g: 0, b: 2 };
-pub const COLOR_CURRENT_MATCH: Color = Color { r: 4, g: 0, b: 40 };
+pub const COLOR_NO_MATCH: Color = Color { r: 2, g: 0, b: 0 };
+pub const COLOR_MATCH: Color = Color { r: 10, g: 0, b: 2 };
 pub const COLOR_CURRENT_NO_MATCH: Color = Color { r: 2, g: 0, b: 10 };
+pub const COLOR_CURRENT_MATCH: Color = Color { r: 4, g: 0, b: 40 };
 
 pub fn get_initial_colors() -> [RGB8; RGB_LED_COUNT] {
     let mut data = [COLOR_UNMAPPED; RGB_LED_COUNT];

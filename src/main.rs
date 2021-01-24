@@ -7,8 +7,7 @@
 // use prerendered::Ws2812;
 // use crate::ws2812::prerendered::Ws2812;
 
-// mod clock;
-mod clock_in;
+mod clock;
 mod color;
 mod dac;
 mod dac_byte;
@@ -19,7 +18,7 @@ mod serial_wrapper;
 mod trigger;
 mod trigger_state;
 
-use crate::clock_in::{ClockIn, StepCounterType};
+use crate::clock::{Clock, ClockResult, ExternalClock, StepCounterType};
 use crate::dac::Dac;
 use crate::dac_byte::DacByte;
 use crate::led_controller::LedController;
@@ -188,7 +187,7 @@ struct AppState {
 }
 
 #[allow(unused)]
-struct App {
+struct App<CLOCK: Clock> {
     step_output_pins: [Pin<Output>; STEP_LED_COUNT],
     adc: Adc,
     a5: Option<PC5<Analog>>,
@@ -198,12 +197,12 @@ struct App {
     sequences: &'static SequencesType,
     state: State,
     trigger: Trigger,
-    clock_in: ClockIn,
+    clock_in: CLOCK,
     sequence_controller: SequenceController,
     led_controller: LedController<'static>,
 }
 
-impl Default for App {
+impl Default for App<ExternalClock> {
     fn default() -> Self {
         let dp = arduino::Peripherals::take().unwrap();
 
@@ -241,7 +240,7 @@ impl Default for App {
         let dac = Dac::new(a0, a1, a2, a3);
 
         let trigger_input = pins.d2.into_floating_input(&mut pins.ddr);
-        let clock_in = ClockIn::new(trigger_input);
+        let clock_in = ExternalClock::new(trigger_input);
 
         let trigger_out = pins.d3.into_output(&mut pins.ddr);
         // let trigger = Trigger::new(trigger_input, trigger_out, TriggerMode::Hold);
@@ -284,7 +283,8 @@ impl Default for App {
         }
     }
 }
-impl App {
+
+impl<CLOCK: Clock> App<CLOCK> {
     fn run(&mut self) -> ! {
         if cfg!(feature = "debug") {
             ufmt::uwriteln!(
@@ -328,7 +328,10 @@ impl App {
         let sequence_state = self.check_sequence_change();
 
         let sequence = sequence_state.sequence;
-        let (trigger_state, step_counter) = self.clock_in.check(sequence);
+        let ClockResult {
+            trigger_state,
+            step_counter,
+        } = self.clock_in.check(sequence);
 
         // If `auto_trigger` is enabled
         // if cfg!(feature = "auto_trigger") {
@@ -417,7 +420,7 @@ impl App {
     }
 
     fn set_all_step_pins_low(&mut self) {
-        App::set_pins_low(&mut self.step_output_pins)
+        App::<CLOCK>::set_pins_low(&mut self.step_output_pins)
     }
 
     fn set_pins_low(output_pins: &mut [Pin<Output>]) {

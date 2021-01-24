@@ -1,4 +1,4 @@
-use crate::clock_in::StepCounterType;
+use crate::clock::StepCounterType;
 use crate::sequence::Sequence;
 use crate::trigger_state::TriggerState;
 use crate::DELAY_TIME;

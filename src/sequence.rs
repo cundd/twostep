@@ -94,15 +94,80 @@ impl uDisplay for Sequence {
 
 #[macro_export]
 macro_rules! seq {
+    ($b1:expr $(,)?) => {
+        Sequence::new(
+            1,
+            Some(DacByte::new($b1)),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+    };
+    ($b1:expr, $b2:expr $(,)?) => {
+        Sequence::new(
+            2,
+            Some(DacByte::new($b1)),
+            Some(DacByte::new($b2)),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+    };
+    ($b1:expr, $b2:expr, $b3:expr $(,)?) => {
+        Sequence::new(
+            3,
+            Some(DacByte::new($b1)),
+            Some(DacByte::new($b2)),
+            Some(DacByte::new($b3)),
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+    };
+    ($b1:expr, $b2:expr, $b3:expr, $b4:expr $(,)?) => {
+        Sequence::new(
+            4,
+            Some(DacByte::new($b1)),
+            Some(DacByte::new($b2)),
+            Some(DacByte::new($b3)),
+            Some(DacByte::new($b4)),
+            None,
+            None,
+            None,
+            None,
+        )
+    };
     ($b1:expr, $b2:expr, $b3:expr, $b4:expr, $b5:expr $(,)?) => {
         Sequence::new(
             5,
-            Some($b1),
-            Some($b2),
-            Some($b3),
-            Some($b4),
-            Some($b5),
+            Some(DacByte::new($b1)),
+            Some(DacByte::new($b2)),
+            Some(DacByte::new($b3)),
+            Some(DacByte::new($b4)),
+            Some(DacByte::new($b5)),
             None,
+            None,
+            None,
+        )
+    };
+    ($b1:expr, $b2:expr, $b3:expr, $b4:expr, $b5:expr, $b6:expr $(,)?) => {
+        Sequence::new(
+            6,
+            Some(DacByte::new($b1)),
+            Some(DacByte::new($b2)),
+            Some(DacByte::new($b3)),
+            Some(DacByte::new($b4)),
+            Some(DacByte::new($b5)),
+            Some(DacByte::new($b6)),
             None,
             None,
         )
@@ -110,40 +175,43 @@ macro_rules! seq {
     ($b1:expr, $b2:expr, $b3:expr, $b4:expr, $b5:expr, $b6:expr, $b7:expr $(,)?) => {
         Sequence::new(
             7,
-            Some($b1),
-            Some($b2),
-            Some($b3),
-            Some($b4),
-            Some($b5),
-            Some($b6),
-            Some($b7),
-            None,
-        )
-    };
-    ($b1:expr, $b2:expr, $b3:expr, $b4:expr, $b5:expr, $b6:expr $(,)?) => {
-        Sequence::new(
-            6,
-            Some($b1),
-            Some($b2),
-            Some($b3),
-            Some($b4),
-            Some($b5),
-            Some($b6),
-            None,
+            Some(DacByte::new($b1)),
+            Some(DacByte::new($b2)),
+            Some(DacByte::new($b3)),
+            Some(DacByte::new($b4)),
+            Some(DacByte::new($b5)),
+            Some(DacByte::new($b6)),
+            Some(DacByte::new($b7)),
             None,
         )
     };
     ($b1:expr, $b2:expr, $b3:expr, $b4:expr, $b5:expr, $b6:expr, $b7:expr, $b8:expr $(,)?) => {
         Sequence::new(
             8,
-            Some($b1),
-            Some($b2),
-            Some($b3),
-            Some($b4),
-            Some($b5),
-            Some($b6),
-            Some($b7),
-            Some($b8),
+            Some(DacByte::new($b1)),
+            Some(DacByte::new($b2)),
+            Some(DacByte::new($b3)),
+            Some(DacByte::new($b4)),
+            Some(DacByte::new($b5)),
+            Some(DacByte::new($b6)),
+            Some(DacByte::new($b7)),
+            Some(DacByte::new($b8)),
         )
     };
+}
+
+mod test {
+    use super::*;
+
+    #[allow(unused)]
+    const SEQUENCES: [Sequence; 8] = [
+        seq!(1),
+        seq!(15, 13),
+        seq!(15, 13, 1),
+        seq!(15, 13, 1, 0),
+        seq!(15, 0, 1, 0, 15),
+        seq!(15, 0, 1, 0, 15, 2),
+        seq!(15, 0, 1, 0, 15, 2, 7),
+        seq!(15, 0, 1, 0, 15, 2, 7, 15),
+    ];
 }

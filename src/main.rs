@@ -19,6 +19,7 @@ mod trigger;
 mod trigger_state;
 
 use crate::clock::{Clock, ClockResult, ExternalClock, StepCounterType};
+use crate::color::color_from_serial;
 use crate::dac::Dac;
 use crate::dac_byte::DacByte;
 use crate::led_controller::LedController;
@@ -301,7 +302,7 @@ impl<CLOCK: Clock> App<CLOCK> {
                 &mut self.serial.get_serial(),
                 "Hello from Arduino with debug!\r"
             )
-                .void_unwrap();
+            .void_unwrap();
         } else {
             ufmt::uwriteln!(
                 &mut self.serial.get_serial(),
@@ -481,6 +482,18 @@ impl<CLOCK: Clock> App<CLOCK> {
                 '1'
             };
             ufmt::uwrite!(&mut self.serial, "{}", bit).void_unwrap();
+        }
+    }
+
+    #[allow(unused)]
+    fn test_colors(&mut self) {
+        loop {
+            match color_from_serial(&mut self.serial) {
+                Ok(color) => {
+                    self.led_controller.write([color; 8]).unwrap();
+                }
+                Err(_) => {}
+            }
         }
     }
 }

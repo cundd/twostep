@@ -29,6 +29,67 @@ pub fn get_initial_colors() -> [RGB8; RGB_LED_COUNT] {
     data
 }
 
+pub const fn hsv_to_color(hsv: Hsv) -> Color {
+    let v: u16 = hsv.val as u16;
+    let s: u16 = hsv.sat as u16;
+    let f: u16 = (hsv.hue as u16 * 2 % 85) * 3; // relative interval
+
+    let p: u16 = v * (255 - s) / 255;
+    let q: u16 = v * (255 - (s * f) / 255) / 255;
+    let t: u16 = v * (255 - (s * (255 - f)) / 255) / 255;
+
+    match hsv.hue {
+        0..=42 => Color {
+            r: v as u8,
+            g: t as u8,
+            b: p as u8,
+        },
+        43..=84 => Color {
+            r: q as u8,
+            g: v as u8,
+            b: p as u8,
+        },
+        85..=127 => Color {
+            r: p as u8,
+            g: v as u8,
+            b: t as u8,
+        },
+        128..=169 => Color {
+            r: p as u8,
+            g: q as u8,
+            b: v as u8,
+        },
+        170..=212 => Color {
+            r: t as u8,
+            g: p as u8,
+            b: v as u8,
+        },
+        213..=254 => Color {
+            r: v as u8,
+            g: p as u8,
+            b: q as u8,
+        },
+        255 => Color {
+            r: v as u8,
+            g: t as u8,
+            b: p as u8,
+        },
+    }
+}
+
+pub const fn color_for_dac_byte(dac_byte: DacByte, saturation: u8, brightness: u8) -> Color {
+    let dac_value: u16 = dac_byte.value() as u16;
+    let max_hue: u16 = u8::MAX as u16;
+    let max_dac: u16 = DacByte::max().value() as u16;
+    let scaled_hue: u8 = (dac_value * max_hue / max_dac) as u8;
+
+    hsv_to_color(Hsv {
+        hue: scaled_hue,
+        sat: saturation,
+        val: brightness,
+    })
+}
+
 pub fn color_from_serial<IMODE: InputMode>(
     mut serial: &mut SerialWrapper<IMODE>,
 ) -> Result<Color, ()> {

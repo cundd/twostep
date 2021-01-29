@@ -1,5 +1,5 @@
 use crate::color::{
-    COLOR_CURRENT_MATCH, COLOR_CURRENT_NO_MATCH, COLOR_MATCH, COLOR_NO_MATCH, COLOR_UNMAPPED,
+    color_for_dac_byte, COLOR_CURRENT_NO_MATCH, COLOR_MATCH, COLOR_NO_MATCH, COLOR_UNMAPPED,
 };
 use crate::sequence::Sequence;
 use crate::ws2812::prerendered::Ws2812;
@@ -60,7 +60,9 @@ impl<'a> LedController<'a> {
         let mut data = self.data_for_sequence(sequence);
 
         if sequence_matches {
-            data[step_counter] = COLOR_CURRENT_MATCH;
+            let step_pointer: u8 = 0b00000001 << step_counter;
+            data[step_counter] =
+                color_for_dac_byte(sequence.get_step(step_pointer).unwrap(), 255, 20);
         } else {
             data[step_counter] = COLOR_CURRENT_NO_MATCH;
         };
@@ -69,12 +71,6 @@ impl<'a> LedController<'a> {
 
     pub fn write(&mut self, data: [RGB8; RGB_LED_COUNT]) -> Result<(), ()> {
         if data != self.last_data {
-            use arduino_uno::prelude::*;
-            let mut serial: crate::arduino::Serial<crate::arduino::hal::port::mode::Floating> =
-                unsafe { core::mem::MaybeUninit::uninit().assume_init() };
-
-            ufmt::uwriteln!(&mut serial, "w").void_unwrap();
-
             match self.outlet.write(data.iter().cloned()) {
                 Ok(_) => {
                     self.last_data = data;

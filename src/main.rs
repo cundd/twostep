@@ -45,9 +45,7 @@ const DELAY_TIME: u16 = 5;
 const STEP_LED_COUNT: usize = 5;
 const RGB_LED_COUNT: usize = 8;
 
-type SequencesType = [Sequence; 12];
-
-const SEQUENCES: SequencesType = [
+const SEQUENCES: [Sequence; 12] = [
     seq!(
         DacByte::new(1),
         DacByte::new(3),
@@ -205,7 +203,7 @@ struct App<CLOCK: Clock> {
     dac: Dac,
     sequence_change_output: PD4<Output>,
     serial: SerialWrapper<Floating>,
-    sequences: &'static SequencesType,
+    sequences: &'static [Sequence],
     state: State,
     trigger: Trigger,
     clock_in: CLOCK,

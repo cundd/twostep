@@ -1,5 +1,5 @@
 use crate::sequence::Sequence;
-use crate::{SequencesType, SEQUENCES};
+use crate::SEQUENCES;
 use arduino_uno::hal::port::mode::{Input, PullUp};
 use arduino_uno::hal::port::portc::PC5;
 use arduino_uno::prelude::*;
@@ -7,7 +7,7 @@ use arduino_uno::prelude::*;
 type SequenceChangeInput = PC5<Input<PullUp>>;
 
 pub struct SequenceController {
-    sequences: &'static SequencesType,
+    sequences: &'static [Sequence],
     sequence_change_input: SequenceChangeInput,
     sequence_pointer: usize,
     last_sequence_change_state: bool,

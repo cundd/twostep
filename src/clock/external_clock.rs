@@ -1,7 +1,8 @@
 use crate::clock::{Clock, ClockResult};
 use crate::sequence::Sequence;
+use crate::serial_wrapper::SerialWrapper;
 use crate::trigger_state::TriggerState;
-use arduino_uno::hal::port::mode::{Floating, Input};
+use arduino_uno::hal::port::mode::{Floating, Input, InputMode};
 use arduino_uno::hal::port::portd::PD2;
 use arduino_uno::prelude::*;
 use void::ResultVoidExt;
@@ -44,16 +45,17 @@ impl ExternalClock {
 }
 
 impl Clock for ExternalClock {
-    fn check(&mut self, sequence: Sequence) -> ClockResult {
+    fn check<IMODE: InputMode>(
+        &mut self,
+        serial: &mut SerialWrapper<IMODE>,
+        sequence: Sequence,
+    ) -> ClockResult {
         let trigger_state = self.get_new_trigger_state();
         match trigger_state {
             TriggerState::Rise => {
                 self.advance_step_counter(sequence);
 
-                let mut serial: arduino_uno::Serial<arduino_uno::hal::port::mode::Floating> =
-                    unsafe { core::mem::MaybeUninit::uninit().assume_init() };
-
-                ufmt::uwriteln!(&mut serial, "CLK!\r").void_unwrap();
+                ufmt::uwriteln!(serial, "CLK!\r").void_unwrap();
 
                 self.last_important_trigger_state = trigger_state
             }

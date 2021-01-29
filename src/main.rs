@@ -331,7 +331,7 @@ impl<CLOCK: Clock> App<CLOCK> {
         let ClockResult {
             trigger_state,
             step_counter,
-        } = self.clock_in.check(sequence);
+        } = self.clock_in.check(&mut self.serial, sequence);
 
         // If `auto_trigger` is enabled
         // if cfg!(feature = "auto_trigger") {

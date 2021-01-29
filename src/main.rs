@@ -44,9 +44,19 @@ const DELAY_TIME: u16 = 5;
 const STEP_LED_COUNT: usize = 5;
 const RGB_LED_COUNT: usize = 8;
 
-type SequencesType = [Sequence; 11];
+type SequencesType = [Sequence; 12];
 
 const SEQUENCES: SequencesType = [
+    seq!(
+        DacByte::new(1),
+        DacByte::new(3),
+        DacByte::new(5),
+        DacByte::new(8),
+        DacByte::new(9),
+        DacByte::new(10),
+        DacByte::new(12),
+        DacByte::new(15),
+    ),
     seq!(
         DacByte::max(),
         DacByte::new(5),

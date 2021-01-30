@@ -197,9 +197,8 @@ impl<CLOCK: Clock> App<CLOCK> {
         }
         let mut run_counter: u32 = 0;
 
-        self.led_controller
-            .write(color::get_initial_colors())
-            .unwrap();
+        self.initialize_leds();
+        // self.test_colors();
 
         loop {
             run_counter += 1;
@@ -355,6 +354,16 @@ impl<CLOCK: Clock> App<CLOCK> {
                 step_output_pin.set_low().void_unwrap();
             }
         }
+    }
+
+    fn initialize_leds(&mut self) {
+        let blank = Default::default();
+        let initial_colors = color::get_initial_colors();
+        // Workaround for the bright green led color on startup
+        self.led_controller.write(blank).unwrap();
+        self.led_controller.write(initial_colors).unwrap();
+        self.led_controller.write(blank).unwrap();
+        self.led_controller.write(initial_colors).unwrap();
     }
 
     #[allow(unused)]

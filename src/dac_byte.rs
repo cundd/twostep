@@ -16,10 +16,12 @@ impl DacByte {
         Self(MAX)
     }
 
+    #[allow(unused)]
     pub const fn half() -> Self {
         Self(MAX / 2)
     }
 
+    #[allow(unused)]
     pub const fn min() -> Self {
         Self(0b00000000)
     }

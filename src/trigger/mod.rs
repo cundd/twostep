@@ -1,5 +1,7 @@
 mod trigger_factory;
 use crate::clock::StepCounterType;
+use crate::millis::millis;
+use crate::scheduler::{Task, TaskId};
 use crate::sequence::Sequence;
 use crate::trigger_state::TriggerState;
 use crate::DELAY_TIME;
@@ -29,6 +31,7 @@ pub struct Trigger {
     output: TriggerOutput,
     trigger_mode: TriggerMode,
     last_trigger_state: TriggerState,
+    scheduled_task: Option<Task<TriggerTask>>,
 }
 
 impl Trigger {
@@ -37,6 +40,7 @@ impl Trigger {
             output,
             trigger_mode,
             last_trigger_state: TriggerState::Unchanged,
+            scheduled_task: None,
         }
     }
 
@@ -57,9 +61,8 @@ impl Trigger {
                 .void_unwrap();
 
                 if self.trigger_mode == TriggerMode::Pulse {
-                    // Todo: Make this async
-                    arduino_uno::delay_ms(DELAY_TIME as u16);
-                    self.set_output(LOW).void_unwrap();
+                    self.scheduled_task =
+                        Some(Task::new(TriggerTask::SetOff, millis() + DELAY_TIME as u32));
                 }
             }
             TriggerState::Fall => {
@@ -74,6 +77,21 @@ impl Trigger {
         self.last_trigger_state = state;
     }
 
+    pub fn check_scheduled(
+        &mut self,
+        millis: u32,
+        _state: TriggerState,
+        _step_counter: StepCounterType,
+        _sequence: Sequence,
+    ) {
+        if let Some(task) = &self.scheduled_task {
+            if task.id == TriggerTask::SetOff && millis >= task.timestamp {
+                self.set_output(LOW).void_unwrap();
+                self.scheduled_task = None
+            }
+        }
+    }
+
     fn set_output(&mut self, value: bool) -> Result<(), Void> {
         if value == HIGH {
             self.output.set_high()
@@ -82,3 +100,10 @@ impl Trigger {
         }
     }
 }
+
+#[derive(Debug, Copy, Clone, PartialOrd, PartialEq)]
+enum TriggerTask {
+    SetOff,
+}
+
+impl TaskId for TriggerTask {}

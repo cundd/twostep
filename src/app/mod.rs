@@ -114,8 +114,12 @@ impl App<Clock> {
         //     }
         // }
 
-        // self.trigger
-        //     .check_scheduled(millis::millis(), trigger_state, step_counter, sequence);
+        self.trigger.check_scheduled(
+            crate::millis::millis(),
+            trigger_state,
+            step_counter,
+            sequence,
+        );
         self.trigger.check(trigger_state, step_counter, sequence);
         if trigger_state == TriggerState::Rise {
             ufmt::uwriteln!(&mut self.serial, "t ").void_unwrap();

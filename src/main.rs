@@ -1,5 +1,6 @@
 #![feature(llvm_asm)]
 #![feature(const_panic)]
+#![feature(abi_avr_interrupt)]
 #![no_std]
 #![no_main]
 
@@ -13,6 +14,8 @@ mod color;
 mod dac;
 mod dac_byte;
 mod led_controller;
+mod millis;
+mod scheduler;
 mod sequence;
 mod sequence_controller;
 mod serial_wrapper;
@@ -36,7 +39,7 @@ const DELAY_TIME: u32 = 5;
 const STEP_LED_COUNT: usize = 5;
 const RGB_LED_COUNT: usize = 8;
 
-const USE_INTERNAL_CLOCK: bool = false;
+const USE_INTERNAL_CLOCK: bool = true;
 
 const SEQUENCES: [Sequence; 12] = [
     seq!(0, 3, 5, 8, 9, 10, 12, 15),

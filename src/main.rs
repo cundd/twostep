@@ -34,7 +34,7 @@ use arduino_uno::adc::Adc;
 use arduino_uno::hal::port::mode::{Analog, Floating, Output};
 use arduino_uno::hal::port::portb::PB5;
 use arduino_uno::hal::port::portc::PC4;
-use arduino_uno::hal::port::portd::PD4;
+use arduino_uno::hal::port::portd::{PD3, PD4};
 use arduino_uno::hal::port::{mode, Pin};
 use arduino_uno::{adc, spi};
 use embedded_hal::digital::v2::OutputPin;
@@ -129,9 +129,7 @@ impl Default for App<ExternalClock> {
         let clock_in = ExternalClock::new(trigger_input);
 
         let trigger_out = pins.d3.into_output(&mut pins.ddr);
-        // let trigger = Trigger::new(trigger_input, trigger_out, TriggerMode::Hold);
-        // let trigger = Trigger::new(trigger_input, trigger_out, TriggerMode::Pulse);
-        let trigger = Trigger::new(trigger_out, TriggerMode::Follow);
+        let trigger = App::<ExternalClock>::build_trigger(trigger_out);
 
         let sequence_change_input = pins.a5.into_pull_up_input(&mut pins.ddr);
         let sequence_controller = SequenceController::new(sequence_change_input);
@@ -373,6 +371,14 @@ impl<CLOCK: Clock> App<CLOCK> {
                 Err(_) => {}
             }
         }
+    }
+
+    fn build_trigger(trigger_out: PD3<Output>) -> Trigger {
+        // let mode = TriggerMode::Hold;
+        // let mode = TriggerMode::Pulse;
+        let mode = TriggerMode::Follow;
+
+        Trigger::new(trigger_out, mode)
     }
 }
 

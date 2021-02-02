@@ -1,4 +1,4 @@
-use crate::clock::{Clock, ClockResult, StepCounterType};
+use crate::clock::{ClockResult, ClockTrait, StepCounterType};
 use crate::sequence::Sequence;
 use crate::serial_wrapper::SerialWrapper;
 use crate::trigger_state::TriggerState;
@@ -16,6 +16,7 @@ pub struct ExternalClock {
 }
 
 impl ExternalClock {
+    #[allow(unused)]
     pub fn new(input: ClockInput) -> Self {
         Self {
             input,
@@ -43,7 +44,7 @@ impl ExternalClock {
     }
 }
 
-impl Clock for ExternalClock {
+impl ClockTrait for ExternalClock {
     fn check<IMODE: InputMode>(
         &mut self,
         serial: &mut SerialWrapper<IMODE>,

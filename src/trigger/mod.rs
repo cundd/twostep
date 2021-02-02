@@ -1,3 +1,4 @@
+mod trigger_factory;
 use crate::clock::StepCounterType;
 use crate::sequence::Sequence;
 use crate::trigger_state::TriggerState;
@@ -5,6 +6,7 @@ use crate::DELAY_TIME;
 use arduino_uno::hal::port::mode::Output;
 use arduino_uno::hal::port::portd::PD3;
 use arduino_uno::prelude::*;
+pub use trigger_factory::TriggerFactory;
 use void::{ResultVoidExt, Void};
 
 type TriggerOutput = PD3<Output>;
@@ -56,7 +58,7 @@ impl Trigger {
 
                 if self.trigger_mode == TriggerMode::Pulse {
                     // Todo: Make this async
-                    arduino_uno::delay_ms(DELAY_TIME);
+                    arduino_uno::delay_ms(DELAY_TIME as u16);
                     self.set_output(LOW).void_unwrap();
                 }
             }

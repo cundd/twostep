@@ -33,7 +33,7 @@ use arduino_uno as arduino;
 use arduino_uno::adc::Adc;
 use arduino_uno::hal::port::mode::{Analog, Floating, Output};
 use arduino_uno::hal::port::portb::PB5;
-use arduino_uno::hal::port::portc::{PC4, PC5};
+use arduino_uno::hal::port::portc::PC4;
 use arduino_uno::hal::port::portd::PD4;
 use arduino_uno::hal::port::{mode, Pin};
 use arduino_uno::{adc, spi};
@@ -86,7 +86,6 @@ struct AppState {
 struct App<CLOCK: Clock> {
     step_output_pins: [Pin<Output>; STEP_LED_COUNT],
     adc: Adc,
-    a5: Option<PC5<Analog>>,
     dac: Dac,
     sequence_change_output: PD4<Output>,
     serial: SerialWrapper<Floating>,
@@ -96,6 +95,7 @@ struct App<CLOCK: Clock> {
     clock_in: CLOCK,
     sequence_controller: SequenceController,
     led_controller: LedController<'static>,
+    analog_input: Option<PC4<Analog>>,
 }
 
 impl Default for App<ExternalClock> {
@@ -126,8 +126,8 @@ impl Default for App<ExternalClock> {
             ),
         );
 
-        let adc = adc::Adc::new(dp.ADC, Default::default());
-        // let a5 = pins.a5.into_analog_input(&mut adc);
+        let mut adc = adc::Adc::new(dp.ADC, Default::default());
+        let analog_input = Some(pins.a4.into_analog_input(&mut adc));
 
         let a0 = pins.a0.into_output(&mut pins.ddr);
         let a1 = pins.a1.into_output(&mut pins.ddr);
@@ -163,7 +163,7 @@ impl Default for App<ExternalClock> {
             step_output_pins,
             sequence_change_output,
             adc,
-            a5: None,
+            analog_input,
             serial,
             sequences: &SEQUENCES,
             state: State {
@@ -207,18 +207,13 @@ impl<CLOCK: Clock> App<CLOCK> {
     }
 
     fn run_loop(&mut self, _run_counter: u32) {
-        // if cfg!(feature = "test_adc") {
-        //     // match self.a5 {
-        //     //     Some(a) => {
-        //     //         // let adc6: u16 = nb::block!(self.adc.read(&mut self.a5)).void_unwrap();
-        //     //         let adc6: u16 = nb::block!(self.adc.read(&mut a)).void_unwrap();
-        //     //         self.print_bits(adc6 as u8);
-        //     //         ufmt::uwrite!(&mut self.serial, " ").void_unwrap();
-        //     //         ufmt::uwrite!(&mut self.serial, "adc6:{}", adc6).void_unwrap();
-        //     //         ufmt::uwriteln!(&mut self.serial, " ").void_unwrap();
-        //     //     }
-        //     // }
-        // }
+        if cfg!(feature = "test_adc") {
+            if let Some(a) = self.analog_input.as_mut() {
+                let adc_value: u16 = nb::block!(self.adc.read(&mut *a)).void_unwrap();
+                self.print_bits(adc_value as u8);
+                ufmt::uwriteln!(&mut self.serial, " adc_value:{}", adc_value).void_unwrap();
+            }
+        }
 
         let sequence_state = self.check_sequence_change();
 

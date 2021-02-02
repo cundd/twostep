@@ -73,15 +73,6 @@ struct State {
     last_trigger_time: Option<u32>,
 }
 
-#[derive(Clone)]
-struct AppState {
-    sequence_pointer: usize,
-    last_sequence_change_state: bool,
-    trigger_interval: Option<u32>,
-    auto_trigger_interval_countdown: u32,
-    last_trigger_time: Option<u32>,
-}
-
 #[allow(unused)]
 struct App<CLOCK: Clock> {
     step_output_pins: [Pin<Output>; STEP_LED_COUNT],
@@ -89,7 +80,6 @@ struct App<CLOCK: Clock> {
     dac: Dac,
     sequence_change_output: PD4<Output>,
     serial: SerialWrapper<Floating>,
-    sequences: &'static [Sequence],
     state: State,
     trigger: Trigger,
     clock_in: CLOCK,
@@ -165,7 +155,6 @@ impl Default for App<ExternalClock> {
             adc,
             analog_input,
             serial,
-            sequences: &SEQUENCES,
             state: State {
                 trigger_interval: None,
                 auto_trigger_interval_countdown: 0,

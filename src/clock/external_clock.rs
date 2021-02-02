@@ -1,4 +1,4 @@
-use crate::clock::{Clock, ClockResult};
+use crate::clock::{Clock, ClockResult, StepCounterType};
 use crate::sequence::Sequence;
 use crate::serial_wrapper::SerialWrapper;
 use crate::trigger_state::TriggerState;
@@ -8,7 +8,6 @@ use arduino_uno::prelude::*;
 use void::ResultVoidExt;
 
 type ClockInput = PD2<Input<Floating>>;
-pub type StepCounterType = usize;
 
 pub struct ExternalClock {
     input: ClockInput,

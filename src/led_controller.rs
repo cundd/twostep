@@ -1,5 +1,6 @@
 use crate::color::{
-    color_for_dac_byte, COLOR_CURRENT_NO_MATCH, COLOR_MATCH, COLOR_NO_MATCH, COLOR_UNMAPPED,
+    color_for_dac_byte, BRIGHTNESS_CURRENT_TRIGGER, BRIGHTNESS_CURRENT_NO_TRIGGER, BRIGHTNESS_DEFAULT,
+    COLOR_UNMAPPED,
 };
 use crate::sequence::Sequence;
 use crate::ws2812::prerendered::Ws2812;
@@ -59,12 +60,18 @@ impl<'a> LedController<'a> {
     ) -> Result<(), ()> {
         let mut data = self.data_for_sequence(sequence);
 
-        if sequence_matches {
-            let step_pointer: u8 = 0b00000001 << step_counter;
-            data[step_counter] =
-                color_for_dac_byte(sequence.get_step(step_pointer).unwrap(), 255, 20);
-        } else {
-            data[step_counter] = COLOR_CURRENT_NO_MATCH;
+        let step_pointer: u8 = 0b00000001 << step_counter;
+        match sequence.get_step(step_pointer) {
+            None => {}
+            Some(dac_byte) => {
+                if sequence_matches {
+                    data[step_counter] =
+                        color_for_dac_byte(dac_byte, 255, BRIGHTNESS_CURRENT_TRIGGER);
+                } else {
+                    data[step_counter] =
+                        color_for_dac_byte(dac_byte, 255, BRIGHTNESS_CURRENT_NO_TRIGGER);
+                }
+            }
         };
         self.write(data)
     }
@@ -89,11 +96,7 @@ impl<'a> LedController<'a> {
         for step_counter in 0..RGB_LED_COUNT {
             let step_pointer: u8 = 0b00000001 << step_counter;
             if let Some(dac_byte) = sequence.get_step(step_pointer) {
-                if dac_byte.value() > 0 {
-                    data[step_counter] = COLOR_MATCH;
-                } else {
-                    data[step_counter] = COLOR_NO_MATCH;
-                }
+                data[step_counter] = color_for_dac_byte(dac_byte, 255, BRIGHTNESS_DEFAULT);
             }
         }
         data

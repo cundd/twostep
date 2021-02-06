@@ -10,21 +10,25 @@ use void::ResultVoidExt;
 pub type Color = RGB8;
 
 pub const COLOR_UNMAPPED: Color = Color { r: 0, g: 0, b: 0 };
-pub const COLOR_NO_MATCH: Color = Color { r: 2, g: 0, b: 0 };
-pub const COLOR_MATCH: Color = Color { r: 10, g: 0, b: 2 };
-pub const COLOR_CURRENT_NO_MATCH: Color = Color { r: 2, g: 0, b: 10 };
-pub const COLOR_CURRENT_MATCH: Color = Color { r: 4, g: 0, b: 40 };
+pub const COLOR_TRIGGER: Color = Color { r: 10, g: 0, b: 2 };
+pub const COLOR_NO_TRIGGER: Color = Color { r: 2, g: 0, b: 0 };
+pub const COLOR_CURRENT_TRIGGER: Color = Color { r: 4, g: 0, b: 40 };
+pub const COLOR_CURRENT_NO_TRIGGER: Color = Color { r: 2, g: 0, b: 10 };
+
+pub const BRIGHTNESS_DEFAULT: u8 = 3;
+pub const BRIGHTNESS_CURRENT_TRIGGER: u8 = 12;
+pub const BRIGHTNESS_CURRENT_NO_TRIGGER: u8 = 7;
 
 pub fn get_initial_colors() -> [RGB8; RGB_LED_COUNT] {
     let mut data = [COLOR_UNMAPPED; RGB_LED_COUNT];
-    data[0] = COLOR_MATCH;
-    data[1] = COLOR_MATCH;
-    data[2] = COLOR_NO_MATCH;
-    data[3] = COLOR_NO_MATCH;
-    data[4] = COLOR_CURRENT_MATCH;
-    data[5] = COLOR_CURRENT_MATCH;
-    data[6] = COLOR_CURRENT_NO_MATCH;
-    data[7] = COLOR_CURRENT_NO_MATCH;
+    data[0] = COLOR_TRIGGER;
+    data[1] = COLOR_TRIGGER;
+    data[2] = COLOR_NO_TRIGGER;
+    data[3] = COLOR_NO_TRIGGER;
+    data[4] = COLOR_CURRENT_TRIGGER;
+    data[5] = COLOR_CURRENT_TRIGGER;
+    data[6] = COLOR_CURRENT_NO_TRIGGER;
+    data[7] = COLOR_CURRENT_NO_TRIGGER;
 
     data
 }
@@ -79,7 +83,7 @@ pub const fn hsv_to_color(hsv: Hsv) -> Color {
 
 pub const fn color_for_dac_byte(dac_byte: DacByte, saturation: u8, brightness: u8) -> Color {
     let dac_value: u16 = dac_byte.value() as u16;
-    let max_hue: u16 = u8::MAX as u16;
+    let max_hue: u16 = 210; // Cut because min and max are red
     let max_dac: u16 = DacByte::max().value() as u16;
     let scaled_hue: u8 = (dac_value * max_hue / max_dac) as u8;
 
